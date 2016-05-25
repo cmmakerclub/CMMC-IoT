@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <MqttConnector.h>
-#include <WiFiConnector.h>
 #include <ESP8266WiFi.h>
 #include <ArduinoJson.h>
 
@@ -12,19 +11,16 @@ MqttConnector *mqtt;
 #define MQTT_PASSWORD     ""
 #define MQTT_CLIENT_ID    ""
 #define MQTT_PREFIX       "/CMMC"
-#define PUBLISH_EVERY     (10*1000)// every 10 seconds
+#define PUBLISH_EVERY     (1*1000)// every 10 seconds
 
 /* DEVICE DATA & FREQUENCY */
-#define DEVICE_NAME       "CNX-CMMC-003"
+#define DEVICE_NAME       "BASIC-CMMC-000"
 
 /* WIFI INFO */
 #ifndef WIFI_SSID
   #define WIFI_SSID        "Nat"
   #define WIFI_PASSWORD    "123456789"
 #endif
-
-
-WiFiConnector wifi(WIFI_SSID, WIFI_PASSWORD);
 
 #include "_publish.h"
 #include "_receive.h"
@@ -35,43 +31,25 @@ void init_hardware()
   Serial.begin(115200);
   delay(10);
   Serial.println();
-  Serial.println("BEGIN");
-}
-
-void init_wifi() {
-  wifi.init();
-
-  wifi.on_connected([&](const void* message)
-  {
-    Serial.print("WIFI CONNECTED WITH IP: ");
-    Serial.println(WiFi.localIP());
-  });
-
-  wifi.on_connecting([&](const void* message)
-  {
-    Serial.print("Connecting to ");
-    Serial.println(wifi.get("ssid") + ", " + wifi.get("password"));
-    delay(200);
-  });
-
-  wifi.connect();
+  Serial.println("Serial port initialized.");
 }
 
 void setup()
 {
   init_hardware();
-  init_wifi();
+
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while(WiFi.status() != WL_CONNECTED) {
+    Serial.printf ("Connecting to %s:%s\r\n", WIFI_SSID, WIFI_PASSWORD);
+    delay(300);
+  }
+
+  Serial.println("WiFi Connected.");
+
   init_mqtt();
 }
 
 void loop()
 {
-  wifi.loop();
-  if (wifi.connected()) {
-    mqtt->loop();
-  }
-  else {
-    Serial.println("WiFi Disconnected..");
-    delay(400);
-  }
+  mqtt->loop();
 }
