@@ -38,7 +38,7 @@ void init_mqtt()
     Serial.printf("[USER] PUB  = %s\r\n", config.topicPub.c_str());
     Serial.printf("[USER] SUB  = %s\r\n", config.topicSub.c_str());
   });
-  
+
   mqtt->on_prepare_data(on_prepare_data, PUBLISH_EVERY);
   mqtt->on_prepare_subscribe([&](MQTT::Subscribe * sub) -> void { });
   mqtt->on_after_prepare_data([&](JsonObject * root) -> void {
