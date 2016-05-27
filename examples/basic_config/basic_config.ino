@@ -1,28 +1,42 @@
 #include <Arduino.h>
+#include <EEPROM.h>
+#include "util.h"
 #include <MqttConnector.h>
 #include <ESP8266WiFi.h>
 #include <ArduinoJson.h>
 #include <CMMC_OTA.h>
+#include <CMMCEasy.h>
 
 MqttConnector *mqtt;
 CMMC_OTA ota;
+CMMCEasy easy;
 
+#define WEBSERVER_MODE 1
+#define MQTT_MODE       2
+
+uint8_t running_mode = MQTT_MODE;
+
+// CMMC_Interval ti;
+
+
+File configFile = SPIFFS.open("/config.json", "w");
+
+#define MQTT_HOST         "mqtt.espert.io"
 #define MQTT_PORT         1883
 #define MQTT_USERNAME     ""
 #define MQTT_PASSWORD     ""
 #define MQTT_CLIENT_ID    ""
 #define MQTT_PREFIX       "/CMMC"
-#define PUBLISH_EVERY     (5*1000)// every 10 seconds
+#define PUBLISH_EVERY     (20*1000)// every 10 seconds
 
 /* DEVICE DATA & FREQUENCY */
-#define DEVICE_NAME       "NAT-BASIC-CMMC-000"
+String DEVICE_NAME = "IOT-STARTER-001";
 
 /* WIFI INFO */
-#ifndef WIFI_SSID
-  #define WIFI_SSID        "Nat"
-  #define WIFI_PASSWORD    "123456789"
-#endif
+String WIFI_SSID      =  String("Nat");
+String WIFI_PASSWORD  =  String("123456789");
 
+#include "web.h"
 #include "_publish.h"
 #include "_receive.h"
 #include "init_mqtt.h"
@@ -40,36 +54,98 @@ void init_hardware()
 
 void init_ota() {
   Serial.println("[initialize] OTA");
-
   ota.on_progress([](unsigned int progress, unsigned int total){
       Serial.printf("_CALLBACK_ Progress: %u/%u\r\n", progress,  total);
   });
-
-
   ota.init();
 }
 
-void init_wifi() {
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+void init_ap_sta_wifi() {
+  WiFi.disconnect();
+  WiFi.mode(WIFI_AP_STA);
+  EEPROM.begin(512);
+  delay(500);
+  WiFi.softAP(getId().c_str());
+}
+
+void init_sta_wifi() {
+  WiFi.disconnect();
+
+  delay(200);
+  loadConfig();
+  WiFi.begin(WIFI_SSID.c_str(), WIFI_PASSWORD.c_str());
+  bool ok = true;
+
   while(WiFi.status() != WL_CONNECTED) {
-    Serial.printf ("Connecting to %s:%s\r\n", WIFI_SSID, WIFI_PASSWORD);
-    delay(300);
+    Serial.printf ("Connecting to %s:%s\r\n", WIFI_SSID.c_str(), WIFI_PASSWORD.c_str());
+    easy.blinker.blink(20*(5*ok), LED_BUILTIN);
+    ok != ok;
+    delay(500);
   }
 
+  // easy.blinker.blink(1500, LED_BUILTIN);
+  easy.blinker.detach();
+  digitalWrite(LED_BUILTIN, HIGH);
   Serial.print("WiFi Connected. => ");
   Serial.println(WiFi.localIP());
+
+
+}
+
+void init_fs() {
+  Serial.println("Mounting FS...");
+  if (!SPIFFS.begin()) {
+    Serial.println("Failed to mount file system");
+    return;
+  }
+
+  Serial.println("FS mounted.");
 }
 
 void setup()
 {
   init_hardware();
-  init_wifi();
-  init_ota();
-  init_mqtt();
+  pinMode(13, INPUT_PULLUP);
+  pinMode(0, INPUT_PULLUP);
+  easy.blinker.init(CMMC_Blink::TYPE_TICKER);
+  easy.blinker.blink(20, LED_BUILTIN);
+  delay(2000);
+
+  long_press_check(13, []() {
+    Serial.println("LONG PRESSED !!!!");
+    running_mode = WEBSERVER_MODE;
+  });
+
+  long_press_check(0, []() {
+    Serial.println("LONG PRESSED !!!!");
+    running_mode = WEBSERVER_MODE;
+  });
+
+  init_fs();
+
+
+  if (running_mode == MQTT_MODE) {
+    easy.blinker.blink(500, LED_BUILTIN);
+    init_sta_wifi();
+    init_mqtt();
+    init_ota();
+  }
+  else if (running_mode == WEBSERVER_MODE){
+    easy.blinker.blink(100, LED_BUILTIN);
+    init_ap_sta_wifi();
+    init_webserver();
+    server.begin();
+    delay(1000);
+  }
 }
 
 void loop()
 {
-  mqtt->loop();
+  if (running_mode == MQTT_MODE) {
+    mqtt->loop();
+  }
+  else if(running_mode == WEBSERVER_MODE) {
+    server.handleClient();
+  }
   ota.loop();
 }

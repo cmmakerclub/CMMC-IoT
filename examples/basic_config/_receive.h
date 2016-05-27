@@ -7,10 +7,10 @@ PubSubClient::callback_t on_message_arrived =
     String text = topic + " => " + payload;
 
     Serial.println(text);
-    if (payload == "1") {
-      digitalWrite(LED_BUILTIN, HIGH);
-    }
-    else if (payload == "0") {
+    if (payload == "11") {
       digitalWrite(LED_BUILTIN, LOW);
+    }
+    else if (payload == "10") {
+      digitalWrite(LED_BUILTIN, HIGH);
     }
  };

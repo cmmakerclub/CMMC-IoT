@@ -55,8 +55,10 @@ void init_mqtt()
   mqtt->on_message(on_message_arrived);
 
   mqtt->on_connecting([&](int count, bool * flag) {
-    Serial.printf("[%lu] MQTT CONNECTING.. \r\n", count);
-    delay(1000);
+    if (millis() % 1000 == 0) {
+      Serial.printf("[%lu] MQTT CONNECTING.. \r\n", count);
+    }
+    yield();
   });
 
   mqtt->on_published([&](const MQTT::Publish & pub) -> void {
