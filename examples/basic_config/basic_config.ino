@@ -100,6 +100,14 @@ void init_fs() {
     return;
   }
 
+  Dir root = SPIFFS.openDir("/");
+  Serial.println("CMMC READING ROOT..");
+  while (root.next()) {
+    String fileName = root.fileName();
+    File f = root.openFile("r");
+    Serial.printf("%s: %d\r\n", fileName.c_str(), f.size());
+  }
+
   Serial.println("FS mounted.");
 }
 
@@ -133,9 +141,8 @@ void setup()
   else if (running_mode == WEBSERVER_MODE){
     easy.blinker.blink(300, LED_BUILTIN);
     init_ap_sta_wifi();
-    init_webserver();
-    server.begin();
     delay(1000);
+    init_webserver();
   }
 }
 

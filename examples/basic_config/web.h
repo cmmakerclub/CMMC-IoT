@@ -6,46 +6,20 @@ StaticJsonBuffer<200> jsonBuffer;
 
 
 
-
-
 void init_webserver() {
+
   server.on ("/", []() {
     static String responseHTML = F(""
     "<!doctype html>"
     "<html>"
     "  <head>"
+    "   <meta http-equiv=\"refresh\" content=\"0; url=/index.html\"> "
     ""
     "<script type=\"text/javascript\">"
     "                                 "
     "</script>"
     "  </head>"
     "  <body>"
-    "     <div>"
-    "         <form id='save' name='save' action='save' method='POST'>                "
-    "           <div>                                                                 "
-    "             ssid: <input value='ESPERT-002' type='text' name='ssid'/>  "
-    "           </div>                                                                "
-    "           <div>                                                                 "
-    "             pass: <input value='espertap' type='text' name='pass'/>    "
-    "           </div>                                                                "
-    "           <div>                                                                 "
-    "             name: <input value='NatNat' type='text' name='name' />     "
-    "           </div>                                                                "
-    "           <div>                                                                 "
-    "             mqtt: <input value='mqtt.espert.io' type='text' name='mqttHost' />     "
-    "           </div>                                                                "
-    "           <div>                                                                 "
-    "             rest: <input value='https://maker.ifttt.com/trigger/justpresso/with/key/buON6kS28nWuBQG5nNt9BE' type='text' name='restPath' />     "
-    "           </div>                                                                "
-    "           <div>                                                                 "
-    "             update freq: <input value='10' type='text' name='updateFreq' />     "
-    "           </div>                                                                "
-    "           <div>                                                                 "
-    "             <input type=submit name='submitButton' id='submitButton'            "
-    "                         value='Submit'/>                                        "
-    "           </div>                                                                "
-    "         </form>"
-    "     </div>"
     "  </body>"
     "</html>");
     server.send (200, "text/html", responseHTML.c_str() );
@@ -91,4 +65,8 @@ void init_webserver() {
     sprintf(buff, "{\"millis\": %s }", ms.c_str());
     server.send ( 200, "text/plain", buff );
   });
+
+  server.serveStatic("/", SPIFFS, "/");
+  server.begin();
+
 }

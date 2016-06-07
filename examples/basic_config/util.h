@@ -144,10 +144,8 @@ void httpGet() {
   HTTPClient http;
 
   Serial.print("[HTTP] begin...\n");
-  // configure traged server and url
-  //http.begin("https://192.168.1.12/test.html", "7a 9c f4 db 40 d3 62 5a 6e 21 bc 5c cc 66 c8 3e a1 45 59 38"); //HTTPS
-  http.begin(restPath); //HTTP
 
+  http.begin(restPath); //HTTP
   Serial.print("[HTTP] GET...\n");
   // start connection and send HTTP header
   int httpCode = http.GET();
@@ -156,7 +154,6 @@ void httpGet() {
   if(httpCode > 0) {
     // HTTP header has been send and Server response header has been handled
     Serial.printf("[HTTP] GET... code: %d\n", httpCode);
-
     // file found at server
     if(httpCode == HTTP_CODE_OK) {
         String payload = http.getString();
