@@ -1,5 +1,4 @@
 #include <Arduino.h>
-
 #include <ESP8266WiFi.h>
 #include <EEPROM.h>
 #include <ArduinoJson.h>
@@ -7,6 +6,11 @@
 #include <functional>
 
 typedef std::function<void(void)> void_callback_t;
+
+void replaceString(String input) {
+  input.replace("+", " ");
+  input.replace("%40", "@");
+}
 
 String getId() {
   char textID[16] = {'\0'};
@@ -50,8 +54,8 @@ void long_press_check(uint8_t pin, void_callback_t callback) {
     long memo = millis();
     if (digitalRead(pin) == LOW) {
       while (digitalRead(pin) == LOW) {
-        if (millis() - memo > 1000) {
-            Serial.println("LONG PRESSED > 2000");
+        if (millis() - memo > 1) {
+            Serial.println("LONG PRESSED > 1ms");
             callback();
             break;
         }
@@ -60,4 +64,68 @@ void long_press_check(uint8_t pin, void_callback_t callback) {
         yield();
     }
     yield();
+}
+
+
+bool saveConfig(JsonObject& json) {
+  File configFile = SPIFFS.open("/config.json", "w");
+  if (!configFile) {
+    Serial.println("Failed to open config file for writing");
+    return false;
+  }
+
+  json.printTo(Serial);
+  json.printTo(configFile);
+  Serial.println();
+
+  return true;
+}
+
+
+
+bool loadConfig() {
+  File configFile = SPIFFS.open("/config.json", "r");
+  if (!configFile) {
+    Serial.println("Failed to open config file");
+    return false;
+  }
+
+  size_t size = configFile.size();
+  if (size > 1024) {
+    Serial.println("Config file size is too large");
+    return false;
+  }
+
+  // Allocate a buffer to store contents of the file.
+  std::unique_ptr<char[]> buf(new char[size]);
+
+  // We don't use String here because ArduinoJson library requires the input
+  // buffer to be mutable. If you don't use ArduinoJson, you may as well
+  // use configFile.readString instead.
+  configFile.readBytes(buf.get(), size);
+
+  StaticJsonBuffer<200> jsonBuffer;
+  JsonObject& json = jsonBuffer.parseObject(buf.get());
+
+  if (!json.success()) {
+    Serial.println("Failed to parse config file");
+    return false;
+  }
+
+  const char* ssid = json["ssid"];
+  const char* pass = json["pass"];
+  const char* name = json["name"];
+
+  WIFI_SSID     = String(ssid);
+  WIFI_PASSWORD = String(pass);
+  DEVICE_NAME   = String(name);
+
+
+  Serial.print("Loaded ssid: ");
+  Serial.println(ssid);
+  Serial.print("Loaded pass: ");
+  Serial.println(pass);
+  Serial.print("Loaded name: ");
+  Serial.println(name);
+  return true;
 }

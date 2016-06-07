@@ -1,11 +1,12 @@
 #include <Arduino.h>
 #include <EEPROM.h>
-#include "util.h"
 #include <MqttConnector.h>
 #include <ESP8266WiFi.h>
 #include <ArduinoJson.h>
 #include <CMMC_OTA.h>
 #include <CMMCEasy.h>
+#include "FS.h"
+#include <functional>
 
 MqttConnector *mqtt;
 CMMC_OTA ota;
@@ -19,7 +20,6 @@ uint8_t running_mode = MQTT_MODE;
 // CMMC_Interval ti;
 
 
-File configFile = SPIFFS.open("/config.json", "w");
 
 #define MQTT_HOST         "mqtt.espert.io"
 #define MQTT_PORT         1883
@@ -33,9 +33,10 @@ File configFile = SPIFFS.open("/config.json", "w");
 String DEVICE_NAME = "IOT-STARTER-001";
 
 /* WIFI INFO */
-String WIFI_SSID      =  String("Nat");
-String WIFI_PASSWORD  =  String("123456789");
+String WIFI_SSID      =  String("ESPERT-002");
+String WIFI_PASSWORD  =  String("espertap");
 
+#include "util.h"
 #include "web.h"
 #include "_publish.h"
 #include "_receive.h"
@@ -131,7 +132,7 @@ void setup()
     init_ota();
   }
   else if (running_mode == WEBSERVER_MODE){
-    easy.blinker.blink(100, LED_BUILTIN);
+    easy.blinker.blink(300, LED_BUILTIN);
     init_ap_sta_wifi();
     init_webserver();
     server.begin();

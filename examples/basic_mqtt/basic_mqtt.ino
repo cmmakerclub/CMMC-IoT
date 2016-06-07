@@ -7,6 +7,7 @@
 MqttConnector *mqtt;
 CMMC_OTA ota;
 
+#define MQTT_HOST         "mqtt.espert.io"
 #define MQTT_PORT         1883
 #define MQTT_USERNAME     ""
 #define MQTT_PASSWORD     ""
@@ -19,8 +20,8 @@ CMMC_OTA ota;
 
 /* WIFI INFO */
 #ifndef WIFI_SSID
-  #define WIFI_SSID        "Nat"
-  #define WIFI_PASSWORD    "123456789"
+  #define WIFI_SSID        "ESPERT-002"
+  #define WIFI_PASSWORD    "espertap"
 #endif
 
 #include "_publish.h"
@@ -50,10 +51,13 @@ void init_ota() {
 }
 
 void init_wifi() {
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  // WiFi.disconnect();
+  // WiFi.mode(WIFI_STA);
+  // WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  // WiFi.setAutoReconnect(true);
   while(WiFi.status() != WL_CONNECTED) {
     Serial.printf ("Connecting to %s:%s\r\n", WIFI_SSID, WIFI_PASSWORD);
-    delay(300);
+    delay(100);
   }
 
   Serial.print("WiFi Connected. => ");
