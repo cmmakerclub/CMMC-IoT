@@ -1,9 +1,12 @@
 #include <Arduino.h>
+#include <ESP8266HTTPClient.h>
+
 #include <ESP8266WiFi.h>
 #include <EEPROM.h>
 #include <ArduinoJson.h>
 #include "FS.h"
 #include <functional>
+#include "ESPert_JSON.hpp"
 
 typedef std::function<void(void)> void_callback_t;
 
@@ -103,29 +106,65 @@ bool loadConfig() {
   // buffer to be mutable. If you don't use ArduinoJson, you may as well
   // use configFile.readString instead.
   configFile.readBytes(buf.get(), size);
+  ESPert_JSON *jsonParser;
+  jsonParser = new ESPert_JSON;
 
-  StaticJsonBuffer<200> jsonBuffer;
-  JsonObject& json = jsonBuffer.parseObject(buf.get());
 
-  if (!json.success()) {
+  // jsonParser.init(buf.get());
+
+  // JsonObject& json = jsonBuffer.parseObject(buf.get());
+
+  if (!jsonParser->init(String(buf.get()))) {
     Serial.println("Failed to parse config file");
     return false;
   }
 
-  const char* ssid = json["ssid"];
-  const char* pass = json["pass"];
-  const char* name = json["name"];
 
-  WIFI_SSID     = String(ssid);
-  WIFI_PASSWORD = String(pass);
-  DEVICE_NAME   = String(name);
+  // const char* ssid = json["ssid"];
+  // const char* pass = json["pass"];
+  // const char* name = json["name"];
+  //
+  WIFI_SSID     = jsonParser->get("ssid");
+  WIFI_PASSWORD = jsonParser->get("pass");
+  DEVICE_NAME   = jsonParser->get("name");
+  restPath      = jsonParser->get("restPath");
 
+  jsonParser->dumpSerial();
 
-  Serial.print("Loaded ssid: ");
-  Serial.println(ssid);
-  Serial.print("Loaded pass: ");
-  Serial.println(pass);
-  Serial.print("Loaded name: ");
-  Serial.println(name);
+  Serial.printf("Loaded ssid: %s\r\n", WIFI_SSID.c_str());
+  Serial.printf("Loaded pass: %s\r\n", WIFI_PASSWORD.c_str());
+  Serial.printf("Loaded name: %s\r\n", DEVICE_NAME.c_str());
+  Serial.printf("Loaded restPath: %s\r\n", restPath.c_str());
+  delete jsonParser;
   return true;
+}
+
+
+void httpGet() {
+  HTTPClient http;
+
+  Serial.print("[HTTP] begin...\n");
+  // configure traged server and url
+  //http.begin("https://192.168.1.12/test.html", "7a 9c f4 db 40 d3 62 5a 6e 21 bc 5c cc 66 c8 3e a1 45 59 38"); //HTTPS
+  http.begin(restPath); //HTTP
+
+  Serial.print("[HTTP] GET...\n");
+  // start connection and send HTTP header
+  int httpCode = http.GET();
+
+  // httpCode will be negative on error
+  if(httpCode > 0) {
+    // HTTP header has been send and Server response header has been handled
+    Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+
+    // file found at server
+    if(httpCode == HTTP_CODE_OK) {
+        String payload = http.getString();
+        Serial.println(payload);
+    }
+  } else {
+    Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+  }
+
+  http.end();
 }

@@ -19,8 +19,6 @@ uint8_t running_mode = MQTT_MODE;
 
 // CMMC_Interval ti;
 
-
-
 #define MQTT_HOST         "mqtt.espert.io"
 #define MQTT_PORT         1883
 #define MQTT_USERNAME     ""
@@ -35,6 +33,8 @@ String DEVICE_NAME = "IOT-STARTER-001";
 /* WIFI INFO */
 String WIFI_SSID      =  String("ESPERT-002");
 String WIFI_PASSWORD  =  String("espertap");
+
+String restPath =  String("cmmc.io");
 
 #include "util.h"
 #include "web.h"
@@ -108,22 +108,21 @@ void setup()
   init_hardware();
   pinMode(13, INPUT_PULLUP);
   pinMode(0, INPUT_PULLUP);
+
   easy.blinker.init(CMMC_Blink::TYPE_TICKER);
   easy.blinker.blink(20, LED_BUILTIN);
-  delay(2000);
 
-  long_press_check(13, []() {
+  delay(1500);
+
+  auto web_server_mode_fn = []() {
     Serial.println("LONG PRESSED !!!!");
     running_mode = WEBSERVER_MODE;
-  });
+  };
 
-  long_press_check(0, []() {
-    Serial.println("LONG PRESSED !!!!");
-    running_mode = WEBSERVER_MODE;
-  });
+  long_press_check(13, web_server_mode_fn);
+  long_press_check(0, web_server_mode_fn);
 
   init_fs();
-
 
   if (running_mode == MQTT_MODE) {
     easy.blinker.blink(500, LED_BUILTIN);
@@ -144,9 +143,16 @@ void loop()
 {
   if (running_mode == MQTT_MODE) {
     mqtt->loop();
+    long_press_check(13, []() {
+      Serial.println("REST FIRED!!");
+      Serial.println("REST FIRED!!");
+      Serial.println("REST FIRED!!");
+      httpGet();
+    });
   }
   else if(running_mode == WEBSERVER_MODE) {
     server.handleClient();
   }
+
   ota.loop();
 }
